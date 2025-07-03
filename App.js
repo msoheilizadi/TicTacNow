@@ -1,20 +1,22 @@
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import GameScreen from './components/GameScreen';
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerText}>TicTacNow </Text>
-          <Text style={styles.headerText}>(XO) Game </Text>
+    <SafeAreaView style={styles.container}>
+      <View style={{ flexDirection: "row"}}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerText}>TicTacNow </Text>
+            <Text style={styles.headerText}>(XO) Game </Text>
+          </View>
+            <Pressable style={styles.headerButton}><Text style={styles.headerButtonText}>Reset</Text></Pressable>
+            <Pressable style={styles.headerButton}><Text style={styles.headerButtonText}>about</Text></Pressable>
         </View>
-          <Pressable style={styles.headerButton}><Text style={styles.headerButtonText}>Reset</Text></Pressable>
-          <Pressable style={styles.headerButton}><Text style={styles.headerButtonText}>about</Text></Pressable>
       </View>
-      <GameScreen></GameScreen>
-    </View>
+      <View style={{flex: 1}}><GameScreen></GameScreen></View>
+    </SafeAreaView>
   );
 }
 
@@ -23,14 +25,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#010518',
     alignItems: 'center',
-    justifyContent: 'center',
   },
   headerText: {
     fontSize: 14,
     fontWeight: 600,
     color: "white",
     flex: 0.5,
-    marginHorizontal: 15
+    marginHorizontal: 20,
+    justifyContent: "space-between",
+    alignContent: "space-between"
   },
   header: {
     flexDirection: "row",
