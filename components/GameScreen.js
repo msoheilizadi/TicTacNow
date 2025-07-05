@@ -1,7 +1,7 @@
 import react, {forwardRef, useImperativeHandle, useState} from "react";
 import { Text, StyleSheet, Pressable, View, FlatList } from "react-native";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { easyAI } from "./ai";
+import { easyAI, mediumAI } from "./ai";
 
 function GameScreen(props, ref) {
     const [clicked, setClicked] = useState(Array(9).fill("#4A585A"));
@@ -135,8 +135,6 @@ function GameScreen(props, ref) {
                 setLastClicked(updatLastClick);
                 setPlayerChoices(updateChoice);
 
-                console.log(playKind);
-
                 const result = CheckWinner(updateChoice);
                 if (result != "countine") {
                     setPlayer(result)
@@ -148,9 +146,14 @@ function GameScreen(props, ref) {
                         const aiClicked = [...update];
                         const aiLastClick = Array(9).fill("#4A585A");
                         const aiChoices = [...updateChoice];
-
-                        const asnwerAI = easyAI(updateChoice);
-                        
+                        let asnwerAI;
+                        if (playKind == 1) {
+                            asnwerAI = easyAI(updateChoice);
+                        }
+                        else {
+                            asnwerAI = mediumAI(updateChoice);
+                            console.log(asnwerAI);
+                        }
                         aiClicked[asnwerAI] = "#EA4934";
                         aiLastClick[asnwerAI] = "#EA4934";
                         aiChoices[asnwerAI] = "first";
