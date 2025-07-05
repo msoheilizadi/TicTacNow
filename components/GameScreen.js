@@ -1,7 +1,7 @@
 import react, {forwardRef, useImperativeHandle, useState} from "react";
 import { Text, StyleSheet, Pressable, View, FlatList } from "react-native";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
+import { easyAI } from "./ai";
 
 function GameScreen(props, ref) {
     const [clicked, setClicked] = useState(Array(9).fill("#4A585A"));
@@ -9,6 +9,27 @@ function GameScreen(props, ref) {
     const [playerChoices, setPlayerChoices] = useState(Array(9).fill("not played"));
     const [gameStatus, setGameStatus] = useState(true);
     const [player, setPlayer] = useState("second");
+    const [playKind, setPlayKind] = useState(0);
+    const [player2Name, setPlayer2Name] = useState("Player 2");
+
+    const playKindOrder = ["human", "easy AI", "medium AI", "hard AI"];
+
+    function changePlaykind() {        
+        setPlayKind((prev) => {
+            prev++;
+            if (prev > 3) {
+                prev = 0
+            }
+            return prev
+        })
+        if (playKind == 3){
+            setPlayer2Name("Player 2")
+        }
+        else {
+            setPlayer2Name("AI")
+        }
+        resetGame();
+    }
 
     function CheckWinner(choices) {
         //Rows
@@ -30,11 +51,11 @@ function GameScreen(props, ref) {
 
             if (ScoreX == 3) {
                 setGameStatus(false);
-                return "first player"
+                return "second player"
             }
             if (ScoreO == 3) {
                 setGameStatus(false);    
-                return "second player"
+                return "first player"
             }
         }
         
@@ -55,41 +76,37 @@ function GameScreen(props, ref) {
                 if (ScoreX > 0 && ScoreO > 0) {
                     break
                 }
-            }
-
-            console.log(ScoreX, ScoreO);
-            
-
+            }            
             if (ScoreX == 3) {
                 setGameStatus(false);
-                return "first player"
+                return "second player"
             }
 
             if (ScoreO == 3) {
                 setGameStatus(false);
-                return "second player"
+                return "first player"
             }
         }
         
         //in X direction
         if (choices[0] == "first" && choices[4] == "first" && choices[8] == "first"){
             setGameStatus(false);
-            return "first player"
+            return "second player"
         }
 
         if (choices[2] == "first" && choices[4] == "first" && choices[6] == "first"){
             setGameStatus(false);
-            return "first player"
+            return "second player"
         }
 
         if (choices[0] == "second" && choices[4] == "second" && choices[8] == "second"){
             setGameStatus(false);
-            return "second player"
+            return "first player"
         }
 
         if (choices[2] == "second" && choices[4] == "second" && choices[6] == "second"){
             setGameStatus(false);
-            return "second player"
+            return "first player"
         }
         //Draw
         for (let i = 0; i < 9; i++) {
@@ -106,27 +123,70 @@ function GameScreen(props, ref) {
         const update = [...clicked];
         const updatLastClick = Array(9).fill("#4A585A");
         const updateChoice = [...playerChoices];
+
+        
         if (update[button] == "#4A585A"){
-            if (player == "first") {
-                update[button] = "#EA4934";
-                updatLastClick[button] = "#EA4934";
-                updateChoice[button] = "first";
-                setPlayer("second");
-            }
-            else {
+            if (player == "second") {
                 update[button] = "#48BD7D";
                 updatLastClick[button] = "#48BD7D";
                 updateChoice[button] = "second";
-                setPlayer("first");
+
+                setClicked(update);
+                setLastClicked(updatLastClick);
+                setPlayerChoices(updateChoice);
+
+                console.log(playKind);
+
+                const result = CheckWinner(updateChoice);
+                if (result != "countine") {
+                    setPlayer(result)
+                }
+                
+                else if (playKind != 0) {
+                    setTimeout(() => {
+
+                        const aiClicked = [...update];
+                        const aiLastClick = Array(9).fill("#4A585A");
+                        const aiChoices = [...updateChoice];
+
+                        const asnwerAI = easyAI(updateChoice);
+                        
+                        aiClicked[asnwerAI] = "#EA4934";
+                        aiLastClick[asnwerAI] = "#EA4934";
+                        aiChoices[asnwerAI] = "first";
+
+                        setClicked(aiClicked);
+                        setLastClicked(aiLastClick);
+                        setPlayerChoices(aiChoices);
+
+                        const result = CheckWinner(aiChoices);
+                        if (result !== "countine") {
+                            setPlayer("AI");
+                        }
+                    },500)
+                }
+                else {
+                    setPlayer("first")
+                }
+ 
             }
-            setClicked(update);
-            setLastClicked(updatLastClick);
-            setPlayerChoices(updateChoice);
+            else {
+                update[button] = "#EA4934";
+                updatLastClick[button] = "#EA4934";
+                updateChoice[button] = "first";
+
+                setClicked(update);
+                setLastClicked(updatLastClick);
+                setPlayerChoices(updateChoice);
+
+                const result = CheckWinner(updateChoice);
+                if (result !== "countine") {
+                    setPlayer(result);
+                } else {
+                    setPlayer("second");
+                }
+            }
         }
-        if (CheckWinner(updateChoice) != "countine") {
-            setPlayer(CheckWinner(updateChoice))
-        }
-        
     }
 
     useImperativeHandle(ref, () => ({
@@ -135,7 +195,7 @@ function GameScreen(props, ref) {
 
     function resetGame() {
         setClicked(Array(9).fill("#4A585A"));
-        setPlayer("first");
+        setPlayer("second");
         setLastClicked(Array(9).fill("#4A585A"));
         setPlayerChoices(Array(9).fill("not played"));
         setGameStatus(true);
@@ -171,16 +231,18 @@ function GameScreen(props, ref) {
                         contentContainerStyle={{gap: 0}}
                         style={{flexGrow: 0}}
                     />
-                    <View style={{flexDirection: "row",marginTop: 10, justifyContent: "space-around"}}>
+                    <View style={{flexDirection: "row",marginVertical: 20, justifyContent: "space-around"}}>
                         <View>
                                 <MaterialCommunityIcons name="close" size={54} color="#C0C7D0" />
                                 <Text style={{color: "#C0C7D0"}}>Player 1</Text>
                         </View>
-                        <View>
+                        <View style={{justifyContent: "center", alignItems: "center"}}>
                                 <MaterialCommunityIcons name="circle-outline" size={54} color="#C0C7D0" />
-                                <Text style={{color: "#C0C7D0"}}>Player 2</Text>
+                                <Text style={{color: "#C0C7D0", justifyContent: "center", alignItems: "center"}}>{player2Name}</Text>
                         </View>
-                        </View>
+                    </View>
+                    <View style={{ alignItems:"center"}}><Pressable onPress={changePlaykind} style={styles.Button}><Text style={styles.ButtonText}>Play againt {playKindOrder[playKind]}</Text></Pressable></View>
+                    
                 </>) : (
                     <Text style={{color: "white"}}>{player}</Text>
                 )}
@@ -202,6 +264,24 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center"
     },
+    Button: {
+        borderColor: "#6A8D8A",
+        borderRadius: 8,
+        borderWidth: 1,
+        paddingVertical: 5,
+        marginHorizontal: 8,
+        alignItems: "center",
+        justifyContent: "center",
+        height: 38,
+        width: "80%",
+        marginTop: 10,
+        backgroundColor: "#152C2E"
+    },
+    ButtonText: {
+        fontSize: 13,
+        fontWeight: 200,
+        color: "white",
+    }
 })
 
 export default forwardRef(GameScreen);

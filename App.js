@@ -12,22 +12,22 @@ export default function App() {
 
   return (
     <>
-    <StatusBar style="light" />
-      <SafeAreaView style={styles.container}>
-        <View style={{ flexDirection: "row"}}>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerText}>TicTacNow </Text>
-              <Text style={styles.headerText}>(XO) Game </Text>
-            </View>
-            <View style={{ flexDirection: "row"}}>
-              <Pressable onPress={handleReset} style={styles.headerButton}><Text style={styles.headerButtonText}>Reset</Text></Pressable>
-              <Pressable style={styles.headerButton}><Text style={styles.headerButtonText}>about</Text></Pressable>
+      <StatusBar style="light" />
+        <SafeAreaView style={styles.container}>
+          <View style={{ flexDirection: "row"}}>
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.headerText}>TicTacNow </Text>
+                <Text style={styles.headerText}>(XO) Game </Text>
+              </View>
+              <View style={{ flexDirection: "row"}}>
+                <Pressable onPress={handleReset} style={styles.headerButton}><Text style={styles.headerButtonText}>Reset</Text></Pressable>
+                <Pressable style={styles.headerButton}><Text style={styles.headerButtonText}>about</Text></Pressable>
+              </View>
             </View>
           </View>
-        </View>
-        <View><GameScreen ref={gameRef}></GameScreen></View>
-      </SafeAreaView>
+          <View><GameScreen ref={gameRef}></GameScreen></View>
+        </SafeAreaView>
     </>
   );
 }
