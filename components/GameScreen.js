@@ -1,7 +1,7 @@
 import react, {forwardRef, useImperativeHandle, useState} from "react";
 import { Text, StyleSheet, Pressable, View, FlatList } from "react-native";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { easyAI, mediumAI } from "./ai";
+import { easyAI, hardAI, mediumAI } from "./ai";
 
 function GameScreen(props, ref) {
     const [clicked, setClicked] = useState(Array(9).fill("#4A585A"));
@@ -150,9 +150,12 @@ function GameScreen(props, ref) {
                         if (playKind == 1) {
                             asnwerAI = easyAI(updateChoice);
                         }
-                        else {
+                        else if(playKind == 2) {
                             asnwerAI = mediumAI(updateChoice);
                             console.log(asnwerAI);
+                        }
+                        else if(playKind == 3) {
+                            asnwerAI = hardAI(updateChoice);
                         }
                         aiClicked[asnwerAI] = "#EA4934";
                         aiLastClick[asnwerAI] = "#EA4934";
@@ -247,7 +250,10 @@ function GameScreen(props, ref) {
                     <View style={{ alignItems:"center"}}><Pressable onPress={changePlaykind} style={styles.Button}><Text style={styles.ButtonText}>Play againt {playKindOrder[playKind]}</Text></Pressable></View>
                     
                 </>) : (
-                    <Text style={{color: "white"}}>{player}</Text>
+                    <>
+                        <Text style={{color: "white", textAlign: 'center'}}>{player}</Text>
+                        <Pressable onPress={resetGame} style={styles.headerButton}><Text style={styles.headerButtonText}>Play Again</Text></Pressable>
+                    </>
                 )}
             
             </View>
@@ -281,6 +287,22 @@ const styles = StyleSheet.create({
         backgroundColor: "#152C2E"
     },
     ButtonText: {
+        fontSize: 13,
+        fontWeight: 200,
+        color: "white",
+    },
+    headerButton: {
+        borderColor: "#6A8D8A",
+        borderRadius: 8,
+        borderWidth: 1,
+        paddingHorizontal: 18,
+        paddingVertical: 5,
+        alignContent: "center",
+        justifyContent: "center",
+        marginVertical: 15,
+        height: 32
+    },
+    headerButtonText: {
         fontSize: 13,
         fontWeight: 200,
         color: "white",
