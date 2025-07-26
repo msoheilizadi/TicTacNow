@@ -1,16 +1,27 @@
 import react, {forwardRef, useImperativeHandle, useState} from "react";
-import { Text, StyleSheet, Pressable, View, FlatList } from "react-native";
+import { Animated, Text, StyleSheet, Pressable, View, FlatList } from "react-native";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { easyAI, hardAI, mediumAI } from "./ai";
 
-function GameScreen(props, ref) {
-    const [clicked, setClicked] = useState(Array(9).fill("#4A585A"));
+function GameScreen({mode}, ref) {
+    const [clicked, setClicked] = useState(
+        Array(9).fill(null).map(() => ({
+            color: "#4A585A",
+            anim: new Animated.Value(1), // opacity: initially 1
+        }))
+    );
     const [lastclicked, setLastClicked] = useState(Array(9).fill("#4A585A"));
     const [playerChoices, setPlayerChoices] = useState(Array(9).fill("not played"));
     const [gameStatus, setGameStatus] = useState(true);
     const [player, setPlayer] = useState("second");
     const [playKind, setPlayKind] = useState(0);
     const [player2Name, setPlayer2Name] = useState("Player 2");
+
+    const [modernFirstMoves, setModernFirstMoves] = useState([]);
+    const [modernSecondMoves, setModernSecondMoves] = useState([]);
+
+    
+    
 
     const playKindOrder = ["human", "easy AI", "medium AI", "hard AI"];
 
@@ -118,109 +129,177 @@ function GameScreen(props, ref) {
         return "draw"
     }
     
-
     function handleClick(button) {
-        const update = [...clicked];
-        const updatLastClick = Array(9).fill("#4A585A");
-        const updateChoice = [...playerChoices];
+    // 1) Shallow‑clone each cell object so we can mutate safely
+    const update = clicked.map(cell => ({ color: cell.color, anim: cell.anim }));
+    const updateLast = Array(9).fill("#4A585A");
+    const updateChoice = [...playerChoices];
 
+    // Quick debug
+    console.log("Tapped:", button);
+
+    // 2) Ignore taps on non‑empty cells
+    if (update[button].color !== "#4A585A") return;
+
+    // Helper to remove oldest move in modern mode
+    const removeOldest = (movesArr, boardArr, choicesArr, playerColor) => {
+        const newMoves = [...movesArr];
         
-        if (update[button] == "#4A585A"){
-            if (player == "second") {
-                update[button] = "#48BD7D";
-                updatLastClick[button] = "#48BD7D";
-                updateChoice[button] = "second";
-
-                setClicked(update);
-                setLastClicked(updatLastClick);
-                setPlayerChoices(updateChoice);
-
-                const result = CheckWinner(updateChoice);
-                if (result != "countine") {
-                    setPlayer(result)
-                }
-                
-                else if (playKind != 0) {
-                    setTimeout(() => {
-
-                        const aiClicked = [...update];
-                        const aiLastClick = Array(9).fill("#4A585A");
-                        const aiChoices = [...updateChoice];
-                        let asnwerAI;
-                        if (playKind == 1) {
-                            asnwerAI = easyAI(updateChoice);
-                        }
-                        else if(playKind == 2) {
-                            asnwerAI = mediumAI(updateChoice);
-                            console.log(asnwerAI);
-                        }
-                        else if(playKind == 3) {
-                            asnwerAI = hardAI(updateChoice);
-                        }
-                        aiClicked[asnwerAI] = "#EA4934";
-                        aiLastClick[asnwerAI] = "#EA4934";
-                        aiChoices[asnwerAI] = "first";
-
-                        setClicked(aiClicked);
-                        setLastClicked(aiLastClick);
-                        setPlayerChoices(aiChoices);
-
-                        const result = CheckWinner(aiChoices);
-                        if (result !== "countine") {
-                            setPlayer("AI");
-                        }
-                    },500)
-                }
-                else {
-                    setPlayer("first")
-                }
- 
-            }
-            else {
-                update[button] = "#EA4934";
-                updatLastClick[button] = "#EA4934";
-                updateChoice[button] = "first";
-
-                setClicked(update);
-                setLastClicked(updatLastClick);
-                setPlayerChoices(updateChoice);
-
-                const result = CheckWinner(updateChoice);
-                if (result !== "countine") {
-                    setPlayer(result);
-                } else {
-                    setPlayer("second");
-                }
+        if (newMoves.length === 2) {
+        // When player has 2 pieces and makes 3rd move, oldest goes to 0.3 opacity
+        const toFade = newMoves.shift();
+        boardArr[toFade].anim.setValue(0.3);
+        choicesArr[toFade] = "not played";
+        } else if (newMoves.length === 3) {
+        // When player has 2 full + 1 faded, remove the faded one completely
+        const toRemove = newMoves.shift();
+        // Find and remove the specific player's faded piece
+        for (let i = 0; i < 9; i++) {
+            if (boardArr[i].anim._value === 0.3 && boardArr[i].color === playerColor) {
+            boardArr[i].color = "#4A585A";
+            boardArr[i].anim.setValue(1);
+            break;
             }
         }
+        }
+        return newMoves;
+    };
+
+    if (player === "second") {
+        // ✅ Player 2's move
+        let m2 = [...modernSecondMoves];
+        if (mode === "modern") {
+        m2 = removeOldest(m2, update, updateChoice, "#48BD7D");
+        // Add current move to the array
+        m2.push(button);
+        setModernSecondMoves(m2);
+        }
+
+        // place Player 2's mark
+        update[button].anim.setValue(1);
+        update[button].color = "#48BD7D";
+        updateLast[button] = "#48BD7D";
+        updateChoice[button] = "second";
+
+        // commit state
+        setClicked(update);
+        setLastClicked(updateLast);
+        setPlayerChoices(updateChoice);
+
+        // check for win/draw
+        const r1 = CheckWinner(updateChoice);
+        if (r1 !== "countine") {
+        setPlayer(r1);
+        return;
+        }
+
+        // ✅ AI turn (if any)
+        if (playKind !== 0) {
+        setTimeout(() => {
+            const aiBoard = update.map(c => ({ color: c.color, anim: c.anim }));
+            const aiLast = Array(9).fill("#4A585A");
+            const aiChoices = [...updateChoice];
+
+            // pick AI move
+            let aiMove =
+            playKind === 1
+                ? easyAI(aiChoices)
+                : playKind === 2
+                ? mediumAI(aiChoices)
+                : hardAI(aiChoices);
+
+            // handle modern removal for AI (Player 1)
+            let m1 = [...modernFirstMoves];
+            if (mode === "modern") {
+            m1 = removeOldest(m1, aiBoard, aiChoices, "#EA4934");
+            // Add AI move to the array
+            m1.push(aiMove);
+            setModernFirstMoves(m1);
+            }
+
+            // place AI's mark
+            aiBoard[aiMove].anim.setValue(1);
+            aiBoard[aiMove].color = "#EA4934";
+            aiLast[aiMove] = "#EA4934";
+            aiChoices[aiMove] = "first";
+
+            // commit AI state
+            setClicked(aiBoard);
+            setLastClicked(aiLast);
+            setPlayerChoices(aiChoices);
+
+            // check AI win/draw
+            const r2 = CheckWinner(aiChoices);
+            if (r2 !== "countine") {
+            setPlayer("AI");
+            } else {
+            setPlayer("second");
+            }
+        }, 500);
+        } else {
+        // no AI, pass turn back to Player 1
+        setPlayer("first");
+        }
+    } else {
+        // ✅ Player 1 (human) turn
+        let m1 = [...modernFirstMoves];
+        if (mode === "modern") {
+        m1 = removeOldest(m1, update, updateChoice, "#EA4934");
+        // Add current move to the array
+        m1.push(button);
+        setModernFirstMoves(m1);
+        }
+
+        // place Player 1's mark
+        update[button].anim.setValue(1);
+        update[button].color = "#EA4934";
+        updateLast[button] = "#EA4934";
+        updateChoice[button] = "first";
+
+        setClicked(update);
+        setLastClicked(updateLast);
+        setPlayerChoices(updateChoice);
+
+        const r3 = CheckWinner(updateChoice);
+        if (r3 !== "countine") {
+        setPlayer(r3);
+        } else {
+        setPlayer("second");
+        }
     }
+    }
+
 
     useImperativeHandle(ref, () => ({
         resetGame
     }))
 
     function resetGame() {
-        setClicked(Array(9).fill("#4A585A"));
+        setClicked(
+            Array(9).fill(null).map(() => ({
+                color: "#4A585A",
+                anim: new Animated.Value(1),
+            }))
+        );
         setPlayer("second");
         setLastClicked(Array(9).fill("#4A585A"));
         setPlayerChoices(Array(9).fill("not played"));
         setGameStatus(true);
+        // Clear modern moves arrays
+        setModernFirstMoves([]);
+        setModernSecondMoves([]);
     }
 
     const renderItem = ({item, index}) => (
-        <Pressable 
-            onPress={() => handleClick(index)}
-            style={[
-                styles.square,
-                {borderColor: lastclicked[index]}
-            ]}
-        >
-            {clicked[index] == "#EA4934" && (
+        <Pressable onPress={() => handleClick(index)} style={[styles.square, { borderColor: lastclicked[index] }]}>
+            <Animated.View style={{ opacity: clicked[index].anim }}>
+            {clicked[index].color === "#EA4934" && (
                 <MaterialCommunityIcons name="circle-outline" size={54} color="#FF4C4C" />
             )}
-            {clicked[index] == "#48BD7D" && (
+            {clicked[index].color === "#48BD7D" && (
                 <MaterialCommunityIcons name="close" size={54} color="#00FF99" />
             )}
+            </Animated.View>
         </Pressable>
     )
 
